@@ -88,6 +88,12 @@ The profiler includes specialized agents for Stellar ecosystem:
 - [API Reference](docs/api-reference.md)
 - [Contributing Guide](docs/contributing.md)
 
+## Repository
+
+**Repository**: https://github.com/stellar/stellar-whisk-profiler
+
+**Organization**: [Stellar Development Foundation](https://github.com/stellar)
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.

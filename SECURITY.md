@@ -14,7 +14,7 @@ We take the security of Stellar Whisk Parallelism Profiler seriously. If you dis
 ### How to Report
 
 **Private Disclosure (Preferred)**
-- Email: security@stellar-whisk.org
+- Email: security@stellar.org
 - Include "Security Vulnerability" in the subject line
 - Provide detailed information about the vulnerability
 - Include steps to reproduce (if applicable)
@@ -35,10 +35,10 @@ We take the security of Stellar Whisk Parallelism Profiler seriously. If you dis
 
 ### Security Team
 
-- **Security Lead**: security@stellar-whisk.org
+- **Security Lead**: security@stellar.org
 - **Primary Maintainer**: @akordavid373
-- **Backend Security**: [To be assigned]
-- **Frontend Security**: [To be assigned]
+- **Backend Security**: [To be assigned by Stellar organization]
+- **Frontend Security**: [To be assigned by Stellar organization]
 
 ## Security Best Practices
 
@@ -184,13 +184,13 @@ We support responsible disclosure and will work with security researchers to add
 ## Contact
 
 ### Security Team
-- **Email**: security@stellar-whisk.org
+- **Email**: security@stellar.org
 - **PGP Key**: [Available on request]
 - **Response Time**: Within 48 hours
 
 ### General Inquiries
 - **Project Issues**: GitHub Issues
-- **Non-Security Questions**: team@stellar-whisk.org
+- **Non-Security Questions**: team@stellar.org
 - **Community Discussion**: GitHub Discussions
 
 ---

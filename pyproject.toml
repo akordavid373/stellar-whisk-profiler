@@ -77,10 +77,10 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/stellar-whisk/stellar-whisk-profiler"
+Homepage = "https://github.com/stellar/stellar-whisk-profiler"
 Documentation = "https://stellar-whisk-profiler.readthedocs.io/"
-Repository = "https://github.com/stellar-whisk/stellar-whisk-profiler.git"
-"Bug Tracker" = "https://github.com/stellar-whisk/stellar-whisk-profiler/issues"
+Repository = "https://github.com/stellar/stellar-whisk-profiler.git"
+"Bug Tracker" = "https://github.com/stellar/stellar-whisk-profiler/issues"
 "Stellar Website" = "https://www.stellar.org/"
 
 [project.scripts]

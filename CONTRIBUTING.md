@@ -16,6 +16,7 @@ Thank you for your interest in contributing to Stellar Whisk Parallelism Profile
    # Fork the repository on GitHub, then clone your fork
    git clone https://github.com/YOUR_USERNAME/stellar-whisk-profiler.git
    cd stellar-whisk-profiler
+   git remote add upstream https://github.com/stellar/stellar-whisk-profiler.git
    ```
 
 2. **Install Dependencies**
@@ -277,14 +278,15 @@ Areas requiring specific expertise:
 
 ### Project Maintainers
 - **Lead Maintainer**: @akordavid373
-- **Backend Maintainer**: [To be assigned]
-- **Frontend Maintainer**: [To be assigned]
-- **Contracts Maintainer**: [To be assigned]
+- **Backend Maintainer**: [To be assigned by Stellar organization]
+- **Frontend Maintainer**: [To be assigned by Stellar organization]
+- **Contracts Maintainer**: [To be assigned by Stellar organization]
 
 ### Getting in Touch
 - **GitHub Issues**: For project-related discussions
-- **Email**: team@stellar-whisk.org
-- **Discord**: [Community server link]
+- **Email**: team@stellar.org
+- **Discord**: [Stellar Discord server]
+- **GitHub Discussions**: General questions and ideas
 
 ---
 

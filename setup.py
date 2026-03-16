@@ -14,7 +14,7 @@ setup(
     description="A comprehensive infrastructure for profiling parallelism in Stellar blockchain applications",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/stellar-whisk/stellar-whisk-profiler",
+    url="https://github.com/stellar/stellar-whisk-profiler",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 3 - Alpha",
