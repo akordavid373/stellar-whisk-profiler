@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stellar Whisk Parallelism Profiler Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        .metric-card {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1.5rem;
+            border: 1px solid #e5e7eb;
+        }
+        .metric-value {
+            font-size: 1.875rem;
+            line-height: 2.25rem;
+            font-weight: 700;
+            color: #2563eb;
+        }
+        .metric-label {
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            color: #4b5563;
+            margin-top: 0.25rem;
+        }
+        .stellar-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            line-height: 1rem;
+            font-weight: 500;
+            background-color: #f3e8ff;
+            color: #6b21a8;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center py-4">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-gray-900">Stellar Whisk</h1>
+                        <span class="ml-2 stellar-badge">Stellar</span>
+                        <span class="ml-4 px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">Dashboard</span>
+                    </div>
+                    <div class="flex space-x-4">
+                        <button onclick="uploadResults()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                            Upload Results
+                        </button>
+                        <button onclick="refreshResults()" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors">
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Upload Section -->
+            <div id="upload-section" class="mb-8 hidden">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-lg font-semibold mb-4">Upload Profiling Results</h2>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <input type="file" id="file-input" accept=".json" class="hidden" onchange="handleFileUpload(event)">
+                        <label for="file-input" class="cursor-pointer">
+                            <span class="mt-2 block text-sm font-medium text-gray-900">Click to upload or drag and drop</span>
+                            <span class="mt-1 block text-xs text-gray-500">JSON profiling results only</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results List -->
+            <div id="results-section" class="mb-8">
+                <h2 class="text-lg font-semibold mb-4">Profiling Results</h2>
+                <div id="results-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+
+            <!-- Detail View -->
+            <div id="detail-section" class="hidden">
+                <div class="mb-4">
+                    <button onclick="backToResults()" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors">
+                        ← Back to Results
+                    </button>
+                </div>
+                
+                <!-- Summary Metrics -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+                    <div class="metric-card">
+                        <div class="metric-value" id="duration-metric">-</div>
+                        <div class="metric-label">Duration (s)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="cpu-metric">-</div>
+                        <div class="metric-label">Avg CPU Usage (%)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="threads-metric">-</div>
+                        <div class="metric-label">Avg Threads</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="stellar-metric">-</div>
+                        <div class="metric-label">Stellar Transactions</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="score-metric">-</div>
+                        <div class="metric-label">Parallelism Score</div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold mb-4">CPU Utilization</h3>
+                        <div id="cpu-chart"></div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold mb-4">Memory Usage</h3>
+                        <div id="memory-chart"></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold mb-4">Stellar Activity</h3>
+                        <div id="stellar-chart"></div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold mb-4">Thread Activity</h3>
+                        <div id="threads-chart"></div>
+                    </div>
+                </div>
+
+                <!-- Analysis -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold mb-4">General Analysis</h3>
+                        <div id="analysis-content">
+                            <!-- Analysis will be populated here -->
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold mb-4">Stellar Analysis</h3>
+                        <div id="stellar-analysis-content">
+                            <!-- Stellar analysis will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="mt-4 text-gray-600">Loading...</p>
+        </div>
+    </div>
+
+    <script>
+        let currentResultId = null;
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadResults();
+        });
+
+        function showLoading() {
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+
+        function uploadResults() {
+            document.getElementById('upload-section').classList.toggle('hidden');
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            showLoading();
+            
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                alert('Results uploaded successfully!');
+                document.getElementById('upload-section').classList.add('hidden');
+                loadResults();
+            })
+            .catch(error => {
+                hideLoading();
+                alert('Error uploading results: ' + error.message);
+            });
+        }
+
+        function loadResults() {
+            showLoading();
+            
+            fetch('/api/results')
+                .then(response => response.json())
+                .then(data => {
+                    hideLoading();
+                    displayResults(data.results);
+                })
+                .catch(error => {
+                    hideLoading();
+                    console.error('Error loading results:', error);
+                });
+        }
+
+        function displayResults(results) {
+            const resultsList = document.getElementById('results-list');
+            resultsList.innerHTML = '';
+
+            if (results.length === 0) {
+                resultsList.innerHTML = '<p class="text-gray-500 col-span-full text-center">No profiling results available. Upload some results to get started.</p>';
+                return;
+            }
+
+            results.forEach(result => {
+                const card = document.createElement('div');
+                card.className = 'bg-white rounded-lg shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow cursor-pointer';
+                card.onclick = () => showResultDetail(result.id);
+                
+                const stellarBadge = result.stellar_enabled ? 
+                    '<span class="stellar-badge ml-2">Stellar</span>' : '';
+                
+                card.innerHTML = `
+                    <h3 class="font-semibold text-lg mb-2">Result ${result.id} ${stellarBadge}</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Duration:</span>
+                            <span class="text-sm font-medium">${result.duration.toFixed(2)}s</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Parallelism Score:</span>
+                            <span class="text-sm font-medium">${(result.parallelism_score * 100).toFixed(1)}%</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-600">Timestamp:</span>
+                            <span class="text-sm font-medium">${new Date(result.timestamp * 1000).toLocaleString()}</span>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button class="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm">
+                            View Details
+                        </button>
+                    </div>
+                `;
+                
+                resultsList.appendChild(card);
+            });
+        }
+
+        function showResultDetail(resultId) {
+            currentResultId = resultId;
+            showLoading();
+
+            // Load summary data
+            fetch(`/api/results/${resultId}/summary`)
+                .then(response => response.json())
+                .then(summary => {
+                    updateSummaryMetrics(summary);
+                    return Promise.all([
+                        fetch(`/api/results/${resultId}/timeseries/cpu`),
+                        fetch(`/api/results/${resultId}/timeseries/memory`),
+                        fetch(`/api/results/${resultId}/timeseries/threads`),
+                        fetch(`/api/results/${resultId}/timeseries/stellar`)
+                    ]);
+                })
+                .then(responses => Promise.all(responses.map(r => r.json())))
+                .then(([cpuData, memoryData, threadsData, stellarData]) => {
+                    drawCPUChart(cpuData.data);
+                    drawMemoryChart(memoryData.data);
+                    drawThreadsChart(threadsData.data);
+                    if (stellarData.data && stellarData.data.length > 0) {
+                        drawStellarChart(stellarData.data);
+                    }
+                    return Promise.all([
+                        fetch(`/api/results/${resultId}/analysis`),
+                        fetch(`/api/results/${resultId}/stellar-analysis`)
+                    ]);
+                })
+                .then(responses => Promise.all(responses.map(r => r.json())))
+                .then(([analysis, stellarAnalysis]) => {
+                    updateAnalysis(analysis);
+                    updateStellarAnalysis(stellarAnalysis);
+                    hideLoading();
+                    
+                    // Show detail view
+                    document.getElementById('results-section').classList.add('hidden');
+                    document.getElementById('detail-section').classList.remove('hidden');
+                })
+                .catch(error => {
+                    hideLoading();
+                    console.error('Error loading result details:', error);
+                });
+        }
+
+        function updateSummaryMetrics(summary) {
+            document.getElementById('duration-metric').textContent = summary.execution.duration.toFixed(2);
+            document.getElementById('cpu-metric').textContent = summary.cpu_metrics.average_usage.toFixed(1);
+            document.getElementById('threads-metric').textContent = summary.thread_metrics.average_thread_count.toFixed(1);
+            
+            const stellarMetrics = summary.stellar_metrics;
+            if (stellarMetrics && !stellarMetrics.error) {
+                document.getElementById('stellar-metric').textContent = stellarMetrics.total_transactions;
+            } else {
+                document.getElementById('stellar-metric').textContent = '0';
+            }
+            
+            document.getElementById('score-metric').textContent = (summary.overall_score * 100).toFixed(1);
+        }
+
+        function drawCPUChart(data) {
+            const timestamps = data.map(d => d.timestamp);
+            const cpuUsage = data.map(d => d.cpu_percent);
+
+            const trace = {
+                x: timestamps,
+                y: cpuUsage,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'CPU Usage',
+                line: { color: 'rgb(59, 130, 246)' }
+            };
+
+            const layout = {
+                title: 'CPU Utilization Over Time',
+                xaxis: { title: 'Time' },
+                yaxis: { title: 'CPU Usage (%)' },
+                margin: { t: 40, b: 40, l: 50, r: 20 }
+            };
+
+            Plotly.newPlot('cpu-chart', [trace], layout, {responsive: true});
+        }
+
+        function drawMemoryChart(data) {
+            const timestamps = data.map(d => d.timestamp);
+            const memoryUsage = data.map(d => d.memory_percent);
+
+            const trace = {
+                x: timestamps,
+                y: memoryUsage,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Memory Usage',
+                line: { color: 'rgb(16, 185, 129)' }
+            };
+
+            const layout = {
+                title: 'Memory Usage Over Time',
+                xaxis: { title: 'Time' },
+                yaxis: { title: 'Memory Usage (%)' },
+                margin: { t: 40, b: 40, l: 50, r: 20 }
+            };
+
+            Plotly.newPlot('memory-chart', [trace], layout, {responsive: true});
+        }
+
+        function drawThreadsChart(data) {
+            const timestamps = data.map(d => d.timestamp);
+            const threadCount = data.map(d => d.thread_count);
+            const activeThreads = data.map(d => d.active_threads);
+
+            const trace1 = {
+                x: timestamps,
+                y: threadCount,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Total Threads',
+                line: { color: 'rgb(239, 68, 68)' }
+            };
+
+            const trace2 = {
+                x: timestamps,
+                y: activeThreads,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Active Threads',
+                line: { color: 'rgb(245, 158, 11)' }
+            };
+
+            const layout = {
+                title: 'Thread Activity Over Time',
+                xaxis: { title: 'Time' },
+                yaxis: { title: 'Thread Count' },
+                margin: { t: 40, b: 40, l: 50, r: 20 }
+            };
+
+            Plotly.newPlot('threads-chart', [trace1, trace2], layout, {responsive: true});
+        }
+
+        function drawStellarChart(data) {
+            const timestamps = data.map(d => d.timestamp);
+            const transactionCount = data.map(d => d.transaction_count);
+            const contractExecutions = data.map(d => d.contract_executions);
+
+            const trace1 = {
+                x: timestamps,
+                y: transactionCount,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Transactions',
+                line: { color: 'rgb(147, 51, 234)' }
+            };
+
+            const trace2 = {
+                x: timestamps,
+                y: contractExecutions,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'Contract Executions',
+                line: { color: 'rgb(236, 72, 153)' }
+            };
+
+            const layout = {
+                title: 'Stellar Activity Over Time',
+                xaxis: { title: 'Time' },
+                yaxis: { title: 'Count' },
+                margin: { t: 40, b: 40, l: 50, r: 20 }
+            };
+
+            Plotly.newPlot('stellar-chart', [trace1, trace2], layout, {responsive: true});
+        }
+
+        function updateAnalysis(analysis) {
+            const content = document.getElementById('analysis-content');
+            
+            let insightsHtml = '';
+            if (analysis.insights.length > 0) {
+                insightsHtml = `
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-gray-900 mb-3">Key Insights</h4>
+                        <ul class="space-y-2">
+                            ${analysis.insights.map(insight => `
+                                <li class="flex items-start">
+                                    <svg class="h-5 w-5 text-blue-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span class="text-gray-700">${insight}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            let recommendationsHtml = '';
+            if (analysis.recommendations.length > 0) {
+                recommendationsHtml = `
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-gray-900 mb-3">Recommendations</h4>
+                        <ul class="space-y-2">
+                            ${analysis.recommendations.map(rec => `
+                                <li class="flex items-start">
+                                    <svg class="h-5 w-5 text-green-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span class="text-gray-700">${rec}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            content.innerHTML = insightsHtml + recommendationsHtml;
+
+            if (analysis.insights.length === 0 && analysis.recommendations.length === 0) {
+                content.innerHTML = '<p class="text-gray-500">No specific insights or recommendations available.</p>';
+            }
+        }
+
+        function updateStellarAnalysis(analysis) {
+            const content = document.getElementById('stellar-analysis-content');
+            
+            let insightsHtml = '';
+            if (analysis.insights.length > 0) {
+                insightsHtml = `
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-purple-900 mb-3">Stellar Insights</h4>
+                        <ul class="space-y-2">
+                            ${analysis.insights.map(insight => `
+                                <li class="flex items-start">
+                                    <svg class="h-5 w-5 text-purple-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span class="text-gray-700">${insight}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            let recommendationsHtml = '';
+            if (analysis.recommendations.length > 0) {
+                recommendationsHtml = `
+                    <div class="mb-6">
+                        <h4 class="font-semibold text-purple-900 mb-3">Stellar Recommendations</h4>
+                        <ul class="space-y-2">
+                            ${analysis.recommendations.map(rec => `
+                                <li class="flex items-start">
+                                    <svg class="h-5 w-5 text-purple-500 mt-0.5 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                    </svg>
+                                    <span class="text-gray-700">${rec}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+
+            // Add Stellar efficiency indicator
+            const efficiency = analysis.stellar_efficiency || 0;
+            const efficiencyColor = efficiency > 0.7 ? 'text-green-600' : efficiency > 0.4 ? 'text-yellow-600' : 'text-red-600';
+            const efficiencyText = efficiency > 0.7 ? 'Excellent' : efficiency > 0.4 ? 'Good' : 'Needs Improvement';
+
+            const efficiencyHtml = `
+                <div class="mb-6">
+                    <h4 class="font-semibold text-purple-900 mb-3">Stellar Efficiency</h4>
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl font-bold ${efficiencyColor}">${(efficiency * 100).toFixed(1)}%</span>
+                        <span class="text-sm ${efficiencyColor}">${efficiencyText}</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div class="bg-purple-600 h-2 rounded-full" style="width: ${efficiency * 100}%"></div>
+                    </div>
+                </div>
+            `;
+
+            content.innerHTML = efficiencyHtml + insightsHtml + recommendationsHtml;
+
+            if (analysis.insights.length === 0 && analysis.recommendations.length === 0) {
+                content.innerHTML = '<p class="text-gray-500">No Stellar-specific insights or recommendations available.</p>';
+            }
+        }
+
+        function backToResults() {
+            document.getElementById('detail-section').classList.add('hidden');
+            document.getElementById('results-section').classList.remove('hidden');
+            currentResultId = null;
+        }
+
+        function refreshResults() {
+            loadResults();
+        }
+    </script>
+</body>
+</html>
